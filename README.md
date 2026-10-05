@@ -31,7 +31,17 @@ pip install -r requirements.txt
 2. Copie `.env.example` para `.env` e preencha `BLING_CLIENT_ID` e `BLING_CLIENT_SECRET`.
 3. Autorize o app (abre o navegador; os tokens ficam em `.bling_tokens.json`, não versionado):
    `python -m src.bling_auth`
-4. Extraia um recurso para `data/raw/`:
-   `python -m src.extract produtos`
+4. Extraia os dados para `data/raw/` (todos os recursos, ou um pelo nome):
+   `python -m src.extract` ou `python -m src.extract pedidos-vendas`
+
+## Transformação
+
+1. Baixe a planilha de precificação (Arquivo → Fazer download → .xlsx) para `data/raw/`.
+2. Gere as tabelas em `data/processed/`:
+   `python -m src.transform`
+
+Custo de cada produto: planilha de precificação quando o SKU estiver nela; senão,
+o `precoCusto` do Bling; senão, fica "sem custo" (fora do cálculo de margem).
+Despesas variáveis: cartão 7%, comissão 5%, custo fixo 28% (em `src/transform.py`).
 
 Testes: `python -m pytest`

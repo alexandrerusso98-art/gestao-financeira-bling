@@ -1,5 +1,6 @@
 pandas
 openpyxl
+pyarrow
 streamlit
 requests
 python-dotenv
