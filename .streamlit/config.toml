@@ -1,0 +1,7 @@
+[server]
+# Só este computador acessa o app (os dados são financeiros). Por padrão, o Streamlit
+# aceitaria conexões de qualquer aparelho da rede.
+address = "localhost"
+
+[browser]
+gatherUsageStats = false

@@ -44,4 +44,8 @@ Custo de cada produto: planilha de precificação quando o SKU estiver nela; sen
 o `precoCusto` do Bling; senão, fica "sem custo" (fora do cálculo de margem).
 Despesas variáveis: cartão 7%, comissão 5%, custo fixo 28% (em `src/transform.py`).
 
+## App
+
+`streamlit run app/app.py` (abre em http://localhost:8501, acessível só neste computador)
+
 Testes: `python -m pytest`
