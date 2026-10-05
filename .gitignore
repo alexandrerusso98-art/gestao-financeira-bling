@@ -7,6 +7,8 @@ data/
 # Segredos / credenciais (ex.: token da API do Bling)
 .env
 .env.*
+!.env.example
+.bling_tokens.json
 
 # Planilhas e exportações em qualquer pasta
 *.csv

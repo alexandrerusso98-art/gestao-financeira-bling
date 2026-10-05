@@ -24,4 +24,14 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Credenciais (ex.: token da API do Bling) ficam em um arquivo `.env`, que não é versionado.
+## Integração com o Bling (API v3)
+
+1. No Bling, cadastre um aplicativo com o link de redirecionamento
+   `http://localhost:8080/callback` e os escopos de leitura necessários.
+2. Copie `.env.example` para `.env` e preencha `BLING_CLIENT_ID` e `BLING_CLIENT_SECRET`.
+3. Autorize o app (abre o navegador; os tokens ficam em `.bling_tokens.json`, não versionado):
+   `python -m src.bling_auth`
+4. Extraia um recurso para `data/raw/`:
+   `python -m src.extract produtos`
+
+Testes: `python -m pytest`
