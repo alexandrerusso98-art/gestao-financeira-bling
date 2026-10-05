@@ -18,6 +18,8 @@ DIAS_FUTUROS_CONTAS = 180  # ...e, para contas, vencimentos dos próximos 6 mese
 # nome -> caminho na API, parâmetros fixos e (opcional) nomes dos filtros de data
 RECURSOS = {
     "produtos": {"path": "produtos"},
+    # pedidos antigos apontam para produtos já excluídos; precisamos deles para achar o custo
+    "produtos-excluidos": {"path": "produtos", "params": {"criterio": 4}},
     "categorias": {"path": "categorias/receitas-despesas"},
     "contas-financeiras": {"path": "contas-contabeis"},
     "formas-pagamento": {"path": "formas-pagamentos"},
@@ -80,20 +82,54 @@ def extrair(client, nome, inicio=None, fim=None):
     print(f"  {len(registros)} registros -> {out.relative_to(DATA_RAW.parent.parent)}")
 
 
+def extrair_detalhes_pedidos(client):
+    """Busca cada pedido individualmente, pois a listagem não traz os itens.
+
+    Mantém um cache acumulado e só consulta pedidos novos ou que mudaram de situação.
+    """
+    listas = sorted(DATA_RAW.glob("pedidos-vendas_*.json"))
+    if not listas:
+        raise RuntimeError("Extraia pedidos-vendas antes de pedidos-detalhes.")
+    pedidos = json.loads(listas[-1].read_text(encoding="utf-8"))
+
+    out = DATA_RAW / "pedidos-vendas-detalhes.json"
+    cache = {}
+    if out.exists():
+        cache = {d["id"]: d for d in json.loads(out.read_text(encoding="utf-8"))}
+
+    pendentes = [
+        p["id"] for p in pedidos
+        if p["id"] not in cache or cache[p["id"]]["situacao"]["id"] != p["situacao"]["id"]
+    ]
+    print(f"  {len(pendentes)} pedidos para consultar ({len(cache)} já em cache)")
+    for i, id_pedido in enumerate(pendentes, 1):
+        cache[id_pedido] = client.get(f"pedidos/vendas/{id_pedido}")["data"]
+        if i % 100 == 0 or i == len(pendentes):
+            out.write_text(json.dumps(list(cache.values()), ensure_ascii=False), encoding="utf-8")
+            print(f"  {i}/{len(pendentes)}")
+
+
+EXTRAS = {"pedidos-detalhes": extrair_detalhes_pedidos}  # rodam depois de RECURSOS
+
+
 def main():
     parser = argparse.ArgumentParser(description="Extrai dados do Bling para data/raw/.")
-    parser.add_argument("recursos", nargs="*", help=f"padrão: todos ({', '.join(RECURSOS)})")
+    opcoes = [*RECURSOS, *EXTRAS]
+    parser.add_argument("recursos", nargs="*", help=f"padrão: todos ({', '.join(opcoes)})")
     parser.add_argument("--inicio", type=date.fromisoformat, help="AAAA-MM-DD")
     parser.add_argument("--fim", type=date.fromisoformat, help="AAAA-MM-DD")
     args = parser.parse_args()
-    invalidos = set(args.recursos) - set(RECURSOS)
+    invalidos = set(args.recursos) - set(opcoes)
     if invalidos:
-        parser.error(f"recurso desconhecido: {', '.join(invalidos)}. Opções: {', '.join(RECURSOS)}")
+        parser.error(f"recurso desconhecido: {', '.join(invalidos)}. Opções: {', '.join(opcoes)}")
 
     client = BlingClient()
-    for nome in args.recursos or RECURSOS:
+    for nome in args.recursos or opcoes:
         print(f"{nome}:")
-        extrair(client, nome, args.inicio, args.fim)
+        if nome in EXTRAS:
+            EXTRAS[nome](client)
+        else:
+            extrair(client, nome, args.inicio, args.fim)
 
 
 if __name__ == "__main__":
